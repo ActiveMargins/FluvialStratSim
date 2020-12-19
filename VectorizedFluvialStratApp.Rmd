@@ -1,0 +1,169 @@
+---
+title: "Notebook version of FluvialStratApp"
+output: html_notebook
+---
+This is a simple forward stratigrahpic model for fluvial deposits. This is a notebook that has 5 code chunks that go from loading libraries, through the model, to plotting the model output in two different ways.
+
+
+Required packages/libraries. Make sure that these libraries are installed in R Studio.
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(gridExtra)
+```
+
+Set/define key variables.
+```{r}
+#Model/basin controls
+model_width <- 10000 #width of modelling space (m) 
+sub_rate <- 0.0025 #subsdience rate (m/yr)
+strat_th <- 50 #thickness of stratigraphy to generate (m)
+
+#Channel belt controls
+blt_wd <- 2000 #channel belt width (m)
+blt_p_avl <- 0.00001 #probability of channel belt avulsion, p=1/belt avulsion frequency 
+
+#Channel form controls
+ch_wd <- 150 #channel width (m)
+ch_th <- 5 #channel thickness (m)
+ch_tri <- 1 #triangular-ness of the channelform (ranging from 0-1, 0=rectangular channel deposit, 1=triangular channelform deposit)
+rate <- 4 #migration rate in m/yr
+ch_p_avl <- 0.0001 #probability of channel avulsion, p=1/channel avulsion frequency 
+```
+
+This is a genearl sanity check that merely displays the number of iterations
+```{r}
+print(paste("This will result in ", round(strat_th/sub_rate,digits=1), " model iterations",sep=""))
+```
+
+This is the whole model. It starts by loading a function that processes one channels worth of data. Then starts the whole model. It prints a plot fo the model at the end to display that it's done. It will also print updates as it goes on.
+```{r}
+#Load function for drawing channel polygons
+draw_channel <- function(df){
+    ch_df <- NULL #set up new object/dataframe for the new data
+    local_mig_dir <- df[[1,11]] #get starting migration direction
+    prev_ch_min <- df[[1,9]] #get starting ch_min
+    prev_ch_max <- df[[1,10]] #get strating ch_max
+    for (i in 1:nrow(df)){
+        if((prev_ch_min+local_mig_dir)<df[[i,7]] | (prev_ch_max+local_mig_dir)>df[[i,8]]){ #if the channel is out of bounds,
+            local_mig_dir <- (local_mig_dir*-1) #and flip the migration direction.
+            x1 <- prev_ch_min + local_mig_dir #migrate it the other way,
+            x4 <- prev_ch_max + local_mig_dir
+        } else {
+            local_mig_dir <- sample(c(local_mig_dir, (local_mig_dir*-1)),size=1,prob=c(0.8,0.2)) # give local_mig_dir a chance to switch 
+            x1 <- prev_ch_min + local_mig_dir
+            x4 <- prev_ch_max + local_mig_dir
+        }
+    prev_ch_min <- x1
+    prev_ch_max <- x4
+    
+    ch_df <- rbind(ch_df,data.frame(x1=x1,
+                                    y1=df[[i,1]],
+                                    
+                                    x2=x1+(ch_wd*(ch_tri/2)),
+                                    y2=df[[i,1]]-ch_th,
+                                    
+                                    x3=x4-(ch_wd*(ch_tri/2)),
+                                    y3=df[[i,1]]-ch_th,
+                                    
+                                    x4=x4,
+                                    y4=df[[i,1]])
+                   )
+    
+    } #end for loop
+    processed_rows <<- as.numeric(processed_rows+(nrow(df)))
+    print(paste("Processed ", processed_rows, "years (",(processed_rows/(years+1))*100,"% complete)",sep=""))
+    cbind(df,ch_df)
+}#end function
+
+#------------------------
+
+#Start of model
+years <- strat_th/sub_rate
+processed_rows <- 0
+strat_df <- data.frame(thickness=seq(from=-strat_th,to=0, by=sub_rate),
+                       blt_avl=sample(c(0,1),size=years+1,prob=c(1-blt_p_avl,blt_p_avl),replace=TRUE),
+                       ch_avl=sample(c(0,1),size=years+1,prob=c(1-ch_p_avl,ch_p_avl),replace=TRUE)
+            )  
+
+strat_df[1,2:3] <- 1 #set the first row of the avulsion columns (blt_avl, ch_avl) to 1
+strat_df[which(strat_df$blt_avl==1),3] <- 1 #set ch_avl==1 where blt_avl==1
+
+strat_df$blt_no <- cumsum(strat_df$blt_avl) #create a belt number by cumulative sum
+strat_df$ch_no <- cumsum(strat_df$ch_avl) #create channel number by cumulative sum
+strat_df$dep_no <- paste(strat_df$blt_no,".",strat_df$ch_no,".",seq.int(nrow(strat_df)),sep="") #create unique deposit number by paste
+print(paste("This model consists of: ", max(strat_df$blt_no), " channel belts and ", max(strat_df$ch_no), " channels", sep=""))
+
+#mutate belt information
+strat_df <- strat_df %>% 
+    group_by(blt_no) %>% 
+    mutate(blt_min=sample((-model_width/2):((model_width/2)-blt_wd), 1),
+           blt_max=blt_min+blt_wd) %>% 
+    ungroup()
+
+#mutate channel information
+strat_df <- strat_df %>% 
+    group_by(ch_no) %>% 
+    rowwise() %>%
+    mutate(ch_min=sample((blt_min):(blt_max-ch_wd), 1),
+           ch_max=(ch_min+ch_wd),
+           mig_dir=sample(c(-rate,rate),size=1,prob=c(0.5,0.5))) %>%
+    ungroup()
+strat_df[which(strat_df$ch_avl==0),9:11] <- NA 
+
+#split into a list of dataframes/tibbles
+strat_list <- split(strat_df, f=strat_df$ch_no)
+
+#lapply the draw_channel function to each dataframe/tibble in the list
+strat_list <- lapply(strat_list, function(df)draw_channel(df))
+
+#bind back into dataframe
+strat_df <- do.call(rbind.data.frame, strat_list)
+
+#filter into individual dataframes and rename x, y columns - I don't like pivoting... then bind into one data table
+strata_x1_y1 <- strat_df %>% select(thickness,blt_no,ch_no,dep_no,blt_min,blt_max,x=x1,y=y1)
+strata_x2_y2 <- strat_df %>% select(thickness,blt_no,ch_no,dep_no,blt_min,blt_max,x=x2,y=y2)
+strata_x3_y3 <- strat_df %>% select(thickness,blt_no,ch_no,dep_no,blt_min,blt_max,x=x3,y=y3)
+strata_x4_y4 <- strat_df %>% select(thickness,blt_no,ch_no,dep_no,blt_min,blt_max,x=x4,y=y4)
+
+strat_df <- rbind(strata_x1_y1,strata_x2_y2,strata_x3_y3,strata_x4_y4)
+belt_df <- strat_df %>% group_by(blt_no) %>% summarize(x_min=min(blt_min),
+                                                       x_max=max(blt_max),
+                                                       y_min=min(y),
+                                                       y_max=max(y)
+                                                       )
+
+ggplot() +
+    geom_rect(data=belt_df, mapping=aes(xmin=x_min,xmax=x_max,ymin=y_min,ymax=y_max,alpha=0.1)) +
+    geom_polygon(data=strat_df, mapping=aes(x=x,y=y,fill=as.factor(ch_no),group=dep_no)) +
+    coord_cartesian(xlim=c((-model_width/2),(model_width/2)),ylim=c(-strat_th,0)) + 
+    labs(subtitle="Synthetic fluvial architecture", x="Distance (m)", y="Thickness (m)") +
+    theme(legend.position = "none")
+    
+
+```
+
+
+This is an example plotting for creating nieghbouring plots of the three different heirarchies.
+```{r}
+p <- ggplot() +
+    geom_rect(data=belt_df, mapping=aes(xmin=x_min,xmax=x_max,ymin=y_min,ymax=y_max,alpha=0.05)) +
+    coord_cartesian(xlim=c((-model_width/2),(model_width/2)),ylim=c(-strat_th,0)) + 
+    labs(x="Distance (m)", y="Thickness (m)") +
+    theme(legend.position = "none")
+
+plot1 <- p + geom_polygon(data=strat_df, mapping=aes(x=x,y=y,fill=as.factor(blt_no),group=dep_no)) + labs(subtitle="Channel belts")
+plot2 <- p + geom_polygon(data=strat_df, mapping=aes(x=x,y=y,fill=as.factor(ch_no),group=dep_no)) +  labs(subtitle="Channelform deposits")
+plot3 <- p + geom_polygon(data=strat_df, mapping=aes(x=x,y=y,fill=as.factor(dep_no),group=dep_no)) + labs(subtitle="Individual deposits")
+
+plot_heirarchy <- grid.arrange(plot1,plot2,plot3)
+plot_heirarchy
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

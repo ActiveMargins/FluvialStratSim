@@ -1,6 +1,6 @@
 # FluvialStratSim
 
-##### A simple forward stratigraphic model of fluvial deposits that runs in a RShiny GUI.
+#### A simple forward stratigraphic model of fluvial deposits that runs in a RShiny GUI.
 
 This application is a simple stratigraphic model that I designed in a one day coding challenge. The goal was to produce a simple GUI-based forward stratigraphic model of fluvial deposits that could be used in an educational setting to help students understand the impact of fluvial sediment routing systems parameters (e.g., channel belt width, or rate of channel avulsions) on stratigraphic architecture. 
 

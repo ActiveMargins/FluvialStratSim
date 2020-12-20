@@ -18,8 +18,8 @@ Channel deposits are represented by polygons plotted in a R Shiny ggplot. The lo
   <img width="808" height="200" src="https://github.com/ActiveMargins/FluvialStratSim/blob/main/images/ModelImage.JPG">
 </p>
 
-##### Available Versions/Formats
-###### R Workbook (VectorizedFluvialStratApp.Rmd)
+#### AVAILABLE VERSIONS/FORMATS
+##### R Workbook (VectorizedFluvialStratApp.Rmd)
 This version contains a workbook that generates fluvial stratigraphy. There are five code chunks within the notebook: 
 1) The first loads the required libraries
 2) Inputs for numeric variables. The default controls will create 100m of stratigraphy over 20 000 years. 
@@ -37,7 +37,7 @@ If you are adapting this for any serious computation, you could look into parall
   <img width="643" height="388" src="https://github.com/ActiveMargins/FluvialStratSim/blob/main/images/NoteBookExample.JPG">
 </p>
 
-###### R Shiny App - downloadable (FluvialStratApp.R)
+##### R Shiny App - downloadable (FluvialStratApp.R)
 This is a single file R Shiny application. It has the same inputs as the other versions but is launched from R or RStudio. Using this will allow you to not be throttled by ShinyApps.io but still allow you to use the graphical user interface created by all that code in the .R file. 
 
 <p align="center">
@@ -45,12 +45,12 @@ This is a single file R Shiny application. It has the same inputs as the other v
 </p>
 
 
-###### R Shiny App ([Online version of FluvialStratSim](https://activemargins.shinyapps.io/FluvialStratApp/))
+##### R Shiny App ([Online version of FluvialStratSim](https://activemargins.shinyapps.io/FluvialStratApp/))
 This version of the RShiny app is hosted on shinyapps.io. It is hosted on my free shinyapps account, which has limits on the amount of processing time as well as the number of instances that can be run contemporarily on the servers. See the limitations below. It is best to use one of the other available versions/formats if you are wanting to actually crunch significant stratigraphic models.
 
-##### KNOWN ISSUES
-###### Online shinyapps.io limitations
+#### KNOWN ISSUES
+##### Online shinyapps.io limitations
 This currently based out of my free shinyapps.io account, which means that it the model will only run processes one at a time. This means that if there is someone running a simulation (which can be quite time consuming) new users will not be able to load onto the app or run simulations. If you cannot connect within 30 seconds, I would try connecting later. Again, it is best download the FluvialStratApp.R file and load it from RStudio. 
 
-###### Processing times
+##### Processing times
 Because the motions of individual channels are computed indivdually at a year scale, loading up a large model (e.g., >500 000 yr) can result in long computation times. I have done my best to do as much of the model in a vectorized format. But there is still a for loop that is run on each channel. On my laptop the R Notebook version takes about between *3 and 5 mins per 100 000 years.*

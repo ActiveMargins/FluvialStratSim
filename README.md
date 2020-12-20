@@ -12,6 +12,12 @@ Channel deposits are represented by polygons plotted in a R Shiny ggplot. The lo
 
 [Online version of FluvialStratSim](https://activemargins.shinyapps.io/FluvialStratApp/)
 
+![Example model output](G)
+
+<p align="center">
+  <img width="460" height="300" src="https://github.com/ActiveMargins/FluvialStratSim/blob/main/images/ModelImage.JP">
+</p>
+
 ##### Available Versions/Formats
 ###### R Workbook (VectorizedFluvialStratApp.Rmd)
 This version contains a workbook that generates fluvial stratigraphy. There are five code chunks within the notebook: 
@@ -27,8 +33,13 @@ As the model runs it will print updates when it is finished computing the migrat
 
 If you are adapting this for any serious computation, you could look into parallel computing the lapply() for better perfomance. None of the individual lists used by the lapply() do not require previous outputs. I didn't persue this because there are requirements based on operating systems.   
 
+![Example output of final code chunk](https://github.com/ActiveMargins/FluvialStratSim/blob/main/images/NoteBookExample.JPG)
+
+
 ###### R Shiny App - downloadable (FluvialStratApp.R)
 This is a single file R Shiny application. It has the same inputs as the other versions but is launched from R or RStudio. Using this will allow you to not be throttled by ShinyApps.io but still allow you to use the graphical user interface created by all that code in the .R file. 
+
+![Example of RShiny version](https://github.com/ActiveMargins/FluvialStratSim/blob/main/images/ModelExample.JPG)
 
 ###### R Shiny App ([Online version of FluvialStratSim](https://activemargins.shinyapps.io/FluvialStratApp/))
 This version of the RShiny app is hosted on shinyapps.io. It is hosted on my free shinyapps account, which has limits on the amount of processing time as well as the number of instances that can be run contemporarily on the servers. See the limitations below. It is best to use one of the other available versions/formats if you are wanting to actually crunch significant stratigraphic models.
